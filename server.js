@@ -51,7 +51,6 @@ async function getReply(userId, userMessage) {
   });
 
   let reply = response.content?.[0]?.text || '嗯';
-  // 去掉句号
   reply = reply.replace(/。/g, '');
   history.push({ role: 'assistant', content: reply });
   return reply;
@@ -76,7 +75,6 @@ async function sendWeChatMessage(userId, content) {
   return data;
 }
 
-// 企业微信回调验证（GET）
 app.get('/callback', (req, res) => {
   const { msg_signature, timestamp, nonce, echostr } = req.query;
   if (crypto.verifySignature(msg_signature, timestamp, nonce, echostr)) {
@@ -90,7 +88,6 @@ app.get('/callback', (req, res) => {
   }
 });
 
-// 企业微信消息回调（POST）
 app.post('/callback', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) => {
   try {
     const { msg_signature, timestamp, nonce } = req.query;
@@ -124,57 +121,9 @@ app.post('/callback', express.raw({ type: '*/*', limit: '1mb' }), async (req, re
   }
 });
 
-// 健康检查
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() });
 });
-
-// 查看出站 IP
-app.get('/myip', async (req, res) => {
-  try {
-    const ip = await getPublicIP();
-    res.json({ ip });
-  } catch (e) {
-    res.json({ error: e.message });
-  }
-});
-
-// 自动更新可信 IP
-let lastIP = null;
-
-async function getPublicIP() {
-  return new Promise((resolve, reject) => {
-    require('https').get('https://api64.ipify.org', (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve(data.trim()));
-    }).on('error', reject);
-  });
-}
-
-async function updateTrustedIP() {
-  try {
-    const currentIP = await getPublicIP();
-
-    if (currentIP === lastIP) return;
-    lastIP = currentIP;
-
-    console.log(`[IP更新] IP变更为: ${currentIP}`);
-
-    // IP 变了，给用户发消息提醒更新可信 IP
-    try {
-      await sendWeChatMessage('SunSiZhuo', `IP变了：${currentIP}\n去管理后台更新可信IP`);
-    } catch (e) {
-      // 发不出去也没关系，可能是 IP 还没加
-    }
-  } catch (err) {
-    console.error('[IP更新] 检测IP出错:', err.message);
-  }
-}
-
-// 启动时立即检测一次，之后每 3 分钟检测一次
-updateTrustedIP();
-setInterval(updateTrustedIP, 3 * 60 * 1000);
 
 app.listen(PORT, () => {
   console.log(`时晨菲机器人已启动，监听端口 ${PORT}`);

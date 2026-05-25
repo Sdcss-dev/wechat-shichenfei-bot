@@ -129,6 +129,16 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() });
 });
 
+// 查看出站 IP
+app.get('/myip', async (req, res) => {
+  try {
+    const ip = await getPublicIP();
+    res.json({ ip });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
 // 自动更新可信 IP
 let lastIP = null;
 

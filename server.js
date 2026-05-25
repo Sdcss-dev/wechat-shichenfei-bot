@@ -144,11 +144,11 @@ let lastIP = null;
 
 async function getPublicIP() {
   return new Promise((resolve, reject) => {
-    const { exec } = require('child_process');
-    exec('curl -s -4 https://icanhazip.com', (err, stdout) => {
-      if (err) return reject(err);
-      resolve(stdout.trim());
-    });
+    require('https').get('https://api64.ipify.org', (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve(data.trim()));
+    }).on('error', reject);
   });
 }
 
